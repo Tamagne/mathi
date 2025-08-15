@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Treasure Hunt – CSS‑Only Game</title>
+  <style>
+    :root{
+      --bg: #0f1226;
+      --card: #171a35;
+      --accent: #8b9bff;
+      --accent-2: #66ffd9;
+      --text: #e6e9ff;
+      --muted: #9aa3c7;
+      --win: #6bff8f;
+      --lose: #ff6b8b;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Noto Sans", "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 800px at 70% -10%, #1d2150 0%, var(--bg) 60%) fixed;
+      color:var(--text);
+      display:grid; place-items:center; padding:24px;
+    }
+
+    .game{
+      width:min(900px, 92vw);
+      background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.01));
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:24px; box-shadow:0 10px 40px rgba(0,0,0,.5);
+      overflow:hidden;
+    }
+
+    header{
+      padding:24px 28px; border-bottom:1px solid rgba(255,255,255,.08);
+      backdrop-filter: blur(6px);
+      display:flex; align-items:center; gap:16px; flex-wrap:wrap; justify-content:space-between;
+    }
+    .title{font-weight:800; letter-spacing:.3px; font-size:clamp(20px, 3vw, 28px)}
+    .subtitle{color:var(--muted); font-size:14px}
+
+    .board-wrap{padding:24px; display:grid; gap:18px}
+
+    .controls{display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+    button, .reset{
+      appearance:none; border:0; border-radius:14px; padding:12px 16px; cursor:pointer;
+      background: linear-gradient(180deg, var(--accent), #6576ff);
+      color:#0f1230; font-weight:700; text-transform:uppercase; letter-spacing:.6px; font-size:12px;
+      box-shadow:0 8px 20px rgba(101,118,255,.45);
+    }
+    .ghost{
+      background:transparent; color:var(--text); border:1px solid rgba(255,255,255,.18);
+      box-shadow:none; text-transform:none; letter-spacing:0; font-weight:600;
+    }
+
+    /* GRID */
+    .grid{ 
+      display:grid; grid-template-columns: repeat(5, 1fr); gap:14px; 
+    }
+
+    /* Hide native radios */
+    .cell-input{ position:absolute; opacity:0; pointer-events:none; }
+
+    .tile{
+      position:relative; aspect-ratio:1/1; border-radius:16px; 
+      background:
+        radial-gradient(120% 120% at 110% -10%, rgba(255,255,255,.09), rgba(255,255,255,.02) 70%),
+        linear-gradient(180deg, #1c2045, #131737);
+      border:1px solid rgba(255,255,255,.08);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.02), 0 12px 30px rgba(0,0,0,.35);
+      display:grid; place-items:center; 
+      font-weight:800; color:#aeb6ff; letter-spacing:.4px;
+      user-select:none; cursor:pointer;
+      transition:.16s transform ease, .2s box-shadow ease, .2s border-color ease;
+      overflow:hidden;
+    }
+    .tile:hover{ transform: translateY(-2px); box-shadow:0 14px 34px rgba(0,0,0,.45); border-color:rgba(255,255,255,.18)}
+
+    /* Default face */
+    .tile::before{content:"?"; font-size:clamp(20px, 4.2vw, 32px)}
+
+    /* Reveal marker on check */
+    .cell-input:checked + .tile::before{display:none}
+    .cell-input:checked + .tile::after{
+      content:"❌"; position:absolute; inset:0; display:grid; place-items:center; 
+      font-size:clamp(28px, 6vw, 44px); color:var(--lose);
+      text-shadow:0 6px 20px rgba(255,107,139,.35);
+      animation: pop .25s ease-out;
+    }
+
+    /* WIN tile */
+    .tile.treasure{ background: linear-gradient(180deg, #18214a, #111633);}
+    .cell-input:checked + .tile.treasure::after{ 
+      content:"⭐ You found the treasure!"; 
+      color:var(--win); font-size:clamp(16px, 2.8vw, 22px); text-shadow:0 4px 16px rgba(107,255,143,.35);
+      display:flex; align-items:center; justify-content:center; gap:8px; 
+      padding:0 12px; text-align:center; 
+      animation: pop .3s ease-out;
+    }
+
+    /* Confetti when win is selected */
+    .confetti {position:relative}
+    .confetti::before, .confetti::after{
+      content:""; position:absolute; inset:0; pointer-events:none; opacity:0; 
+      background:
+        radial-gradient(4px 4px at 10% 20%, #fff 98%, transparent),
+        radial-gradient(4px 4px at 30% 80%, #fff 98%, transparent),
+        radial-gradient(4px 4px at 60% 30%, #fff 98%, transparent),
+        radial-gradient(4px 4px at 80% 60%, #fff 98%, transparent),
+        radial-gradient(4px 4px at 50% 50%, #fff 98%, transparent);
+      mask: linear-gradient(#000, transparent 70%);
+    }
+    /* show confetti only when the treasure input is checked */
+    #cell-18:checked ~ .grid .tile.treasure::before{ display:none }
+    #cell-18:checked ~ .grid .tile.treasure::after{ opacity:1 }
+    #cell-18:checked ~ .grid .tile.treasure{ box-shadow:0 0 0 2px rgba(107,255,143,.45), 0 14px 34px rgba(0,0,0,.55)}
+
+    @keyframes pop {
+      0%{ transform: scale(.8); opacity:0 }
+      100%{ transform: scale(1); opacity:1 }
+    }
+
+    /* Footer */
+    footer{ padding:18px 24px; border-top:1px solid rgba(255,255,255,.08); color:var(--muted); font-size:13px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px}
+    .hint{color:var(--accent-2); font-weight:700}
+
+    /* Small screens */
+    @media (max-width: 520px){
+      .grid{ gap:10px }
+      .tile{ border-radius:12px }
+    }
+  </style>
+</head>
+<body>
+  <main class="game" role="application" aria-label="Treasure Hunt Game">
+    <header>
+      <div>
+        <div class="title">Treasure Hunt (HTML + CSS Only)</div>
+        <div class="subtitle">Pick a tile to find the hidden ⭐. No JavaScript used!</div>
+      </div>
+      <form class="controls" onsubmit="return false;">
+        <!-- Reset works without JS using form reset -->
+        <input type="reset" value="Reset" class="reset ghost" onclick="this.closest('form').reset(); document.getElementById('reset-target').reset();">
+      </form>
+    </header>
+
+    <section class="board-wrap">
+        <h1>አሜን
+
+        </h1>
+        <img src="WIN_20250815_13_35_48_Pro.jpg" alt="" height="30" width="30">
+      <!-- A hidden form that actually holds the radios so the reset works everywhere -->
+      <form id="reset-target">
+        <!-- Radios placed before the grid allow CSS to react using general sibling selectors if needed -->
+        <!-- We have 25 cells (5x5). One of them is the treasure: #18 -->
+        <div class="grid">
+          <!-- Row 1 -->
+          <label>
+            <input class="cell-input" id="cell-1" type="radio" name="cell" />
+            <div class="tile" aria-hidden="true"></div>
+          </label>
+          <label>
+            <input class="cell-input" id="cell-2" type="radio" name="cell" />
+            <div class="tile"></div>
+          </label>
+          <label>
+            <input class="cell-input" id="cell-3" type="radio" name="cell" />
+            <div class="tile"></div>
+          </label>
+          <label>
+            <input class="cell-input" id="cell-4" type="radio" name="cell" />
+            <div class="tile"></div>
+          </label>
+          <label>
+            <input class="cell-input" id="cell-5" type="radio" name="cell" />
+            <div class="tile"></div>
+          </label>
+
+          <!-- Row 2 -->
+          <label>
+            <input class="cell-input" id="cell-6" type="radio" name="cell" />
+            <div class="tile"></div>
+          </label>
+          <label>
+            <input class="cell-input" id="cell-7" type="radio" name="cell" />
+            <div class="tile"></div>
+          </label>
+          <label>
+            <input class="cell-input" id="cell-8" type="radio" name="cell" />
+            <div class="tile"></div>
+          </label>
+          <label>
+            <input class="cell-input" id="cell-9" type="radio" name="cell" />
+            <div class="tile"></div>
+          </label>
+          <label>
+            <input class="cell-input" id="cell-10" type="radio" name="cell" />
+            <div class="tile"></div>
+          </label>
+
+          <!-- Row 3 -->
+          <label>
+            <input class="cell-input" id="cell-11" type="radio" name="cell" />
+            <div class="tile"></div>
+          </label>
+          <label>
+            <input class="cell-input" id="cell-12" type="radio" name="cell" />
+            <div class="tile"></div>
+          </label>
+          <label>
+            <input class="cell-input" id="cell-13" type="radio" name="cell" />
+            <div class="tile"></div>
+          </label>
+          <label>
+            <input class="cell-input" id="cell-14" type="radio" name="cell" />
+            <div class="tile"></div>
+          </label>
+          <label>
+            <input class="cell-input" id="cell-15" type="radio" name="cell" />
+            <div class="tile"></div>
+          </label>
+
+          <!-- Row 4 -->
+          <label>
+            <input class="cell-input" id="cell-16" type="radio" name="cell" />
+            <div class="tile"></div>
+          </label>
+          <label>
+            <input class="cell-input" id="cell-17" type="radio" name="cell" />
+            <div class="tile"></div>
+          </label>
+          <label>
+            <!-- TREASURE CELL -->
+            <input class="cell-input" id="cell-18" type="radio" name="cell" />
+            <div class="tile treasure confetti" aria-live="polite" aria-label="Treasure!"></div>
+          </label>
+          <label>
+            <input class="cell-input" id="cell-19" type="radio" name="cell" />
+            <div class="tile"></div>
+          </label>
+          <label>
+            <input class="cell-input" id="cell-20" type="radio" name="cell" />
+            <div class="tile"></div>
+          </label>
+
+          <!-- Row 5 -->
+          <label>
+            <input class="cell-input" id="cell-21" type="radio" name="cell" />
+            <div class="tile"></div>
+          </label>
+          <label>
+            <input class="cell-input" id="cell-22" type="radio" name="cell" />
+            <div class="tile"></div>
+          </label>
+          <label>
+            <input class="cell-input" id="cell-23" type="radio" name="cell" />
+            <div class="tile"></div>
+          </label>
+          <label>
+            <input class="cell-input" id="cell-24" type="radio" name="cell" />
+            <div class="tile"></div>
+          </label>
+          <label>
+            <input class="cell-input" id="cell-25" type="radio" name="cell" />
+            <div class="tile"></div>
+          </label>
+        </div>
+      </form>
+    </section>
+
+    <footer>
+      <span>Tip: The treasure is hidden somewhere in the <span class="hint">middle</span> 😉</span>
+      <span>Made with only HTML & CSS</span>
+    </footer>
+  </main>
+</body>
+</html>
