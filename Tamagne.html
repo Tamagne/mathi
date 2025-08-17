@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Data Analysis Project — Portfolio Site</title>
+  <meta name="description" content="A clean, single‑file website to present a data analysis project. Upload CSV, explore an interactive chart & table, view KPIs, methods, and results." />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <style>
+    :root{
+      --bg: #0b1020;          /* deep navy */
+      --panel: #11162b;
+      --panel-2: #0e1430;
+      --text: #e8eefc;
+      --muted: #a9b3d2;
+      --brand: #5aa9ff;
+      --brand-2: #64e1c1;
+      --accent: #ffd166;
+      --danger: #ff6b6b;
+      --ok: #2fd27d;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius: 18px;
+    }
+    *{ box-sizing: border-box }
+    html,body{ height:100% }
+    body{
+      margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+      background: radial-gradient(1200px 700px at 80% -10%, #1d2653 0%, transparent 60%),
+                  radial-gradient(1200px 700px at 0% 110%, #192046 0%, transparent 60%),
+                  var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    a{ color: var(--brand); text-decoration: none }
+    header{
+      position: sticky; top:0; z-index:50; backdrop-filter: blur(8px);
+      background: linear-gradient(180deg, rgba(8,12,28,.9), rgba(8,12,28,.55));
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+    .wrap{ max-width: 1100px; margin: 0 auto; padding: 0 20px }
+    .nav{ display:flex; gap:16px; align-items:center; justify-content: space-between; padding: 14px 0 }
+    .brand{ display:flex; align-items:center; gap:10px; font-weight: 800; letter-spacing:.2px }
+    .logo{
+      width:36px; height:36px; border-radius: 12px; display:grid; place-items:center; box-shadow: var(--shadow);
+      background: linear-gradient(135deg, var(--brand), var(--brand-2)); color:#081022; font-weight:900
+    }
+    .nav a{ color: var(--text); opacity:.85 }
+    .nav a:hover{ opacity:1 }
+    .nav .links{ display:flex; gap:14px; flex-wrap:wrap }
+
+    .hero{ display:grid; grid-template-columns: 1.2fr .8fr; gap:26px; padding: 40px 0 28px }
+    .hero h1{ font-size: clamp(28px, 3.6vw, 44px); line-height:1.15; margin:.2em 0 }
+    .sub{ color: var(--muted) }
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.02));
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .pill{ display:inline-flex; gap:8px; align-items:center; background: rgba(100,225,193,.12); color: #bdf5e6; padding:6px 10px; border-radius:999px; font-size: 12px; border: 1px solid rgba(100,225,193,.25) }
+    .hero-visual{
+      padding: 16px; position:relative; overflow:hidden
+    }
+    .glow{ position:absolute; inset:-40px -140px auto auto; width:380px; height:380px; filter: blur(80px); background: radial-gradient(circle, rgba(100,225,193,.35), transparent 60%) }
+    .section{ padding: 24px 0 10px }
+    h2{ font-size: clamp(22px, 2.6vw, 30px); margin: 18px 0 }
+
+    .kpis{ display:grid; grid-template-columns: repeat(4,1fr); gap:14px }
+    .kpi{ padding:16px; background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015)); border:1px solid rgba(255,255,255,.06); border-radius:16px }
+    .kpi .label{ color: var(--muted); font-size:12px }
+    .kpi .value{ font-size: 22px; font-weight: 800; margin-top:6px }
+
+    .grid{ display:grid; grid-template-columns: 1fr 1fr; gap:16px }
+    .controls{ display:flex; flex-wrap:wrap; gap:10px; align-items:center }
+    select, input[type="file"], button, input[type="text"]{
+      background: #0d1330; color: var(--text); border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:10px 12px; outline:none
+    }
+    button{ cursor:pointer }
+    button.primary{ background: linear-gradient(135deg, var(--brand), var(--brand-2)); color:#081022; font-weight:700; border:none }
+    button.ghost{ background: transparent }
+    button.danger{ background: linear-gradient(135deg, #ff8da1, var(--danger)); color:#240a0a; font-weight:700; border:none }
+
+    .table-wrap{ overflow:auto; border-radius: 14px; border: 1px solid rgba(255,255,255,.06) }
+    table{ width:100%; border-collapse: collapse; background: rgba(255,255,255,.02) }
+    th, td{ padding:10px 12px; border-bottom:1px solid rgba(255,255,255,.06); text-align:left; white-space:nowrap }
+    th{ color: var(--muted); font-weight:600; position: sticky; top:0; background: #0f1535; z-index:1 }
+    tr:hover td{ background: rgba(255,255,255,.02) }
+
+    .muted{ color: var(--muted) }
+    .footer{ padding: 40px 0 60px; color: var(--muted) }
+
+    @media (max-width: 900px){
+      .hero{ grid-template-columns: 1fr; }
+      .grid{ grid-template-columns: 1fr }
+      .kpis{ grid-template-columns: repeat(2,1fr) }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap nav">
+      <div class="brand"><div class="logo">DA</div><div>Data Analysis Project</div></div>
+      <nav class="links">
+        <a href="#overview">Overview</a>
+        <a href="#data">Data</a>
+        <a href="#analysis">Analysis</a>
+        <a href="#results">Results</a>
+        <a href="#about">About</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <!-- HERO -->
+    <section class="hero section" id="overview">
+      <div>
+        <span class="pill">First project • Interactive site</span>
+        <h1>Presenting: <em style="font-style:normal; color:var(--brand)">Herbals  ሀገር በቀል መድኃኒቶች</em></h1>
+        <p class="sub">Upload your CSV, pick columns, and instantly get an interactive chart, KPIs, and a searchable table. This page is built with plain HTML/CSS/JS so you can share it easily with your tutor.</p>
+        <div style="margin-top:16px; display:flex; gap:10px; flex-wrap:wrap">
+          <button class="primary" id="demoDataBtn">Load demo data</button>
+          <button class="ghost" id="resetBtn">Reset</button>
+        </div>
+      </div>
+      <div class="hero-visual card">
+        <div class="glow" aria-hidden="true"></div>
+        <canvas id="heroChart" height="220" aria-label="Preview chart"></canvas>
+      </div>
+    </section>
+
+    <!-- KPIs -->
+    <section class="section">
+      <h2>Key Metrics</h2>
+      <div class="kpis" id="kpiRow">
+        <div class="kpi"><div class="label">Rows</div><div class="value" id="kpiRows">—</div></div>
+        <div class="kpi"><div class="label">Numeric Columns</div><div class="value" id="kpiNumCols">—</div></div>
+        <div class="kpi"><div class="label">Mean of Y</div><div class="value" id="kpiMean">—</div></div>
+        <div class="kpi"><div class="label">Missing Values</div><div class="value" id="kpiMissing">—</div></div>
+      </div>
+    </section>
+
+    <!-- DATA -->
+    <section class="section" id="data">
+      <h2>Data</h2>
+      <div class="card" style="padding:14px">
+        <div class="controls" style="justify-content:space-between; gap:14px">
+          <div class="controls" style="gap:10px">
+            <label for="fileInput" class="muted">Upload CSV:</label>
+            <input type="file" id="fileInput" accept=".csv" />
+            <button id="downloadFiltered" title="Download filtered CSV">Download CSV</button>
+          </div>
+          <div class="controls">
+            <input type="text" id="searchInput" placeholder="Search table…" />
+          </div>
+        </div>
+        <div style="margin-top:12px; display:flex; flex-wrap:wrap; gap:10px">
+          <div class="controls">
+            <label class="muted" for="xCol">X Axis:</label>
+            <select id="xCol"></select>
+          </div>
+          <div class="controls">
+            <label class="muted" for="yCol">Y Axis:</label>
+            <select id="yCol"></select>
+          </div>
+          <div class="controls">
+            <label class="muted" for="catCol">Category (optional):</label>
+            <select id="catCol"></select>
+            <select id="catFilter"><option value="__ALL__">All</option></select>
+          </div>
+          <div class="controls">
+            <button class="primary" id="updateChart">Update Chart</button>
+            <button id="exportPng">Export Chart PNG</button>
+          </div>
+        </div>
+      </div>
+      <div class="grid" style="margin-top:14px">
+        <div class="card" style="padding:16px">
+          <canvas id="mainChart" height="320" aria-label="Main data chart"></canvas>
+        </div>
+        <div class="card" style="padding:16px">
+          <h3 style="margin-top:0">Column Summary</h3>
+          <div id="summaryBox" class="muted">Load data to see summary.</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="table-wrap">
+          <table id="dataTable" aria-label="Data table"></table>
+        </div>
+        <div class="controls" style="justify-content:space-between; margin-top:10px">
+          <div class="muted" id="tableInfo">0 rows</div>
+          <div class="controls">
+            <button id="prevPage">Prev</button>
+            <span id="pageLabel" class="muted">1/1</span>
+            <button id="nextPage">Next</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ANALYSIS / METHODS -->
+    <section class="section" id="analysis">
+      <h2>Methodology</h2>
+      <div class="card" style="padding:16px">
+        <ol>
+          <li><strong>Data Ingestion:</strong> CSV upload via browser; validation of headers and types.</li>
+          <li><strong>Cleaning:</strong> Trim whitespace, coerce numbers, count missing values.</li>
+          <li><strong>Exploration:</strong> KPI tiles, column summary, interactive chart and searchable table.</li>
+          <li><strong>Visualization:</strong> Line/bar chart with optional category breakdown.</li>
+        </ol>
+        <p class="muted">Replace this text with the exact steps you used in your analysis (tools, libraries, decisions).</p>
+      </div>
+    </section>
+
+    <!-- RESULTS / INSIGHTS -->
+    <section class="section" id="results">
+      <h2>Results & Insights</h2>
+      <div class="card" style="padding:16px">
+        <ul>
+          <li><strong>Finding 1:</strong> Add a brief, evidence‑based insight.</li>
+          <li><strong>Finding 2:</strong> Add another insight backed by a visual or metric.</li>
+          <li><strong>Next Steps:</strong> Mention what you would analyze or collect next.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ABOUT / CONTACT -->
+    <section class="section" id="about">
+      <h2>About</h2>
+      <div class="card" style="padding:16px">
+        <p><strong>Tamagne Gedefaye</strong> — Data Analysis student. Contact: <a href="mailto:you@example.com">tamagne545@gmail.com</a></p>
+        <p class="muted">Tip: Zip this single HTML file with your CSV to share with your tutor. Everything runs locally in the browser.</p>
+      </div>
+    </section>
+
+    <section class="footer">
+      <div class="muted">© <span id="year"></span> Your Name. Built with vanilla HTML/CSS/JS + Chart.js.</div>
+    </section>
+  </main>
+
+  <!-- Libraries via CDN -->
+  <script defer src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <script>
+    // ---------- State ----------
+    const state = {
+      rows: [],           // array of objects
+      headers: [],
+      page: 1,
+      pageSize: 12,
+      chart: null,
+      heroChart: null
+    };
+
+    const els = {
+      fileInput: document.getElementById('fileInput'),
+      xCol: document.getElementById('xCol'),
+      yCol: document.getElementById('yCol'),
+      catCol: document.getElementById('catCol'),
+      catFilter: document.getElementById('catFilter'),
+      searchInput: document.getElementById('searchInput'),
+      dataTable: document.getElementById('dataTable'),
+      tableInfo: document.getElementById('tableInfo'),
+      pageLabel: document.getElementById('pageLabel'),
+      prevPage: document.getElementById('prevPage'),
+      nextPage: document.getElementById('nextPage'),
+      kpiRows: document.getElementById('kpiRows'),
+      kpiNumCols: document.getElementById('kpiNumCols'),
+      kpiMean: document.getElementById('kpiMean'),
+      kpiMissing: document.getElementById('kpiMissing'),
+      summaryBox: document.getElementById('summaryBox'),
+      mainChart: document.getElementById('mainChart'),
+      heroChart: document.getElementById('heroChart'),
+      updateChart: document.getElementById('updateChart'),
+      downloadFiltered: document.getElementById('downloadFiltered'),
+      exportPng: document.getElementById('exportPng'),
+      resetBtn: document.getElementById('resetBtn'),
+      demoDataBtn: document.getElementById('demoDataBtn')
+    };
+
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // ---------- Helpers ----------
+    function isNumeric(n){ return typeof n === 'number' && isFinite(n) }
+    function coerceTypes(rows){
+      return rows.map(r=>{
+        const o={};
+        for(const k in r){
+          const v = typeof r[k]==='string'? r[k].trim(): r[k];
+          const num = v!=='' && !isNaN(v) ? Number(v) : v;
+          o[k] = (typeof num==='number' && !Number.isNaN(num)) ? num : v;
+        }
+        return o;
+      })
+    }
+    function unique(arr){ return [...new Set(arr)] }
+    function countMissing(rows){
+      let miss=0; let total=0;
+      rows.forEach(r=>{ for(const k in r){ total++; if(r[k]===''||r[k]==null) miss++; } })
+      return {miss, total}
+    }
+
+    function inferHeaders(rows){ return rows.length? Object.keys(rows[0]) : [] }
+    function numericColumns(rows){
+      const headers = inferHeaders(rows);
+      return headers.filter(h=> rows.some(r=> typeof r[h]==='number' && !Number.isNaN(r[h])) )
+    }
+
+    function populateSelectors(){
+      const headers = state.headers;
+      const numCols = numericColumns(state.rows);
+      for(const sel of [els.xCol, els.yCol, els.catCol, els.catFilter]) sel.innerHTML='';
+      headers.forEach(h=>{
+        const optX = new Option(h,h); els.xCol.add(optX);
+        const optY = new Option(h,h); els.yCol.add(optY);
+        const optC = new Option(h,h); els.catCol.add(optC);
+      })
+      els.catCol.add(new Option('— none —',''));
+      els.catFilter.add(new Option('All','__ALL__'));
+
+      // sensible defaults
+      if(headers.length){ els.xCol.value = headers[0]; }
+      if(numCols.length){ els.yCol.value = numCols[0]; }
+      els.catCol.value = '';
+      updateCategoryFilter();
+    }
+
+    function updateCategoryFilter(){
+      const c = els.catCol.value;
+      els.catFilter.innerHTML='';
+      els.catFilter.add(new Option('All','__ALL__'));
+      if(!c) return;
+      const values = unique(state.rows.map(r=> r[c])).filter(v=> v!=='' && v!=null);
+      values.sort();
+      values.forEach(v=> els.catFilter.add(new Option(v, String(v))) );
+    }
+
+    function filteredRows(){
+      const q = els.searchInput.value.toLowerCase();
+      const cat = els.catCol.value;
+      const pick = els.catFilter.value;
+      let out = state.rows;
+      if(q){
+        out = out.filter(r=> Object.values(r).some(v=> String(v).toLowerCase().includes(q)) );
+      }
+      if(cat && pick && pick!=="__ALL__"){ out = out.filter(r=> String(r[cat])===pick ); }
+      return out;
+    }
+
+    function renderTable(){
+      const rows = filteredRows();
+      const headers = state.headers;
+      const start = (state.page-1)*state.pageSize;
+      const pageRows = rows.slice(start, start+state.pageSize);
+
+      let thead = '<thead><tr>' + headers.map(h=>`<th>${h}</th>`).join('') + '</tr></thead>';
+      let tbody = '<tbody>' + pageRows.map(r=> `<tr>${headers.map(h=>`<td>${r[h] ?? ''}</td>`).join('')}</tr>` ).join('') + '</tbody>';
+      els.dataTable.innerHTML = thead + tbody;
+
+      const pages = Math.max(1, Math.ceil(rows.length/state.pageSize));
+      state.page = Math.min(state.page, pages);
+      els.pageLabel.textContent = `${state.page}/${pages}`;
+      els.tableInfo.textContent = `${rows.length} rows (showing ${pageRows.length})`;
+    }
+
+    function computeKPIs(){
+      const rows = filteredRows();
+      const numCols = numericColumns(rows);
+      els.kpiRows.textContent = rows.length;
+      els.kpiNumCols.textContent = numCols.length;
+
+      let mean = '—';
+      const y = els.yCol.value;
+      if(y){
+        const vals = rows.map(r=> r[y]).filter(isNumeric);
+        if(vals.length){
+          const m = vals.reduce((a,b)=>a+b,0)/vals.length;
+          mean = m.toFixed(2);
+        }
+      }
+      els.kpiMean.textContent = mean;
+
+      const {miss,total} = countMissing(rows);
+      els.kpiMissing.textContent = `${miss}/${total}`;
+    }
+
+    function summarizeColumns(){
+      if(!state.rows.length){ els.summaryBox.textContent = 'Load data to see summary.'; return; }
+      const headers = state.headers;
+      const rows = state.rows;
+      const lines = headers.map(h=>{
+        const vals = rows.map(r=> r[h]).filter(v=> v!=='' && v!=null);
+        const numericVals = vals.filter(isNumeric);
+        const uniqueCount = unique(vals.map(String)).length;
+        if(numericVals.length){
+          const min = Math.min(...numericVals);
+          const max = Math.max(...numericVals);
+          const mean = numericVals.reduce((a,b)=>a+b,0)/numericVals.length;
+          return `<div><strong>${h}</strong>: numeric • n=${numericVals.length} • min=${min.toFixed(2)} • max=${max.toFixed(2)} • mean=${mean.toFixed(2)}</div>`
+        } else {
+          return `<div><strong>${h}</strong>: categorical/text • unique=${uniqueCount}</div>`
+        }
+      });
+      els.summaryBox.innerHTML = lines.join('');
+    }
+
+    function buildChart(){
+      const ctx = els.mainChart.getContext('2d');
+      if(state.chart){ state.chart.destroy(); }
+
+      const x = els.xCol.value;
+      const y = els.yCol.value;
+      const c = els.catCol.value;
+      const rows = filteredRows();
+
+      if(!x || !y){ return; }
+
+      if(!c){
+        const labels = rows.map(r=> r[x]);
+        const data = rows.map(r=> isNumeric(r[y])? r[y] : null);
+        state.chart = new Chart(ctx, {
+          type: 'line',
+          data: { labels, datasets: [{ label: `${y} by ${x}` , data, tension:.25, borderWidth:2, pointRadius:2 }]},
+          options: { plugins:{ legend:{ display:true }}, responsive:true, maintainAspectRatio:false, scales:{ x:{ ticks:{ color:'#cfd6f3' }}, y:{ ticks:{ color:'#cfd6f3' }}} }
+        });
+      } else {
+        // group by category
+        const groups = unique(rows.map(r=> r[c]));
+        const labels = rows.map(r=> r[x]);
+        const datasets = groups.map(g=>({
+          label: `${g}`,
+          data: rows.map(r=> String(r[c])===String(g) && isNumeric(r[y])? r[y] : null),
+          borderWidth:2, pointRadius:2, tension:.25
+        }));
+        state.chart = new Chart(ctx, { type:'line', data:{ labels, datasets }, options:{ plugins:{ legend:{ position:'top' }}, responsive:true, maintainAspectRatio:false } });
+      }
+    }
+
+    function exportPNG(){
+      if(!state.chart){ return }
+      const url = state.chart.toBase64Image();
+      const a = document.createElement('a'); a.href=url; a.download='chart.png'; a.click();
+    }
+
+    function downloadCSV(){
+      const rows = filteredRows();
+      if(!rows.length) return;
+      const headers = state.headers;
+      const csv = [headers.join(',')].concat(rows.map(r=> headers.map(h=> JSON.stringify(r[h] ?? '')).join(','))).join('\n');
+      const blob = new Blob([csv], {type:'text/csv'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'filtered_data.csv'; a.click();
+    }
+
+    function resetAll(){
+      state.rows = []; state.headers = []; state.page=1;
+      els.dataTable.innerHTML = ''; els.summaryBox.textContent='Load data to see summary.'; 
+      els.kpiRows.textContent='—'; els.kpiNumCols.textContent='—'; els.kpiMean.textContent='—'; els.kpiMissing.textContent='—';
+      for(const sel of [els.xCol, els.yCol, els.catCol, els.catFilter]) sel.innerHTML='';
+      if(state.chart){ state.chart.destroy(); state.chart=null; }
+    }
+
+    // ---------- File parsing ----------
+    els.fileInput.addEventListener('change', (e)=>{
+      const file = e.target.files?.[0]; if(!file) return;
+      Papa.parse(file, { header:true, skipEmptyLines:true, complete: (res)=>{
+        state.rows = coerceTypes(res.data);
+        state.headers = inferHeaders(state.rows);
+        state.page=1;
+        populateSelectors(); updateCategoryFilter(); renderTable(); computeKPIs(); summarizeColumns(); buildChart();
+      }})
+    })
+
+    // ---------- Search & paging ----------
+    els.searchInput.addEventListener('input', ()=>{ state.page=1; renderTable(); computeKPIs(); buildChart(); })
+    els.prevPage.addEventListener('click', ()=>{ state.page=Math.max(1, state.page-1); renderTable(); })
+    els.nextPage.addEventListener('click', ()=>{
+      const rows = filteredRows(); const pages = Math.max(1, Math.ceil(rows.length/state.pageSize));
+      state.page=Math.min(pages, state.page+1); renderTable();
+    })
+
+    // ---------- Selectors & buttons ----------
+    els.catCol.addEventListener('change', ()=>{ updateCategoryFilter(); buildChart(); })
+    els.catFilter.addEventListener('change', ()=>{ state.page=1; renderTable(); computeKPIs(); buildChart(); })
+    els.updateChart.addEventListener('click', ()=>{ computeKPIs(); buildChart(); })
+    els.exportPng.addEventListener('click', exportPNG)
+    els.downloadFiltered.addEventListener('click', downloadCSV)
+    els.resetBtn.addEventListener('click', resetAll)
+
+    // ---------- Demo data ----------
+    els.demoDataBtn.addEventListener('click', ()=>{
+      // small synthetic time series with category
+      const dates = [...Array(20)].map((_,i)=> new Date(2025,0,1+i).toISOString().slice(0,10));
+      const cats = ['Alpha','Beta','Gamma'];
+      const rows = dates.flatMap((d,i)=> cats.map(c=> ({
+        date: d,
+        category: c,
+        value: Math.round(50 + 10*Math.sin(i/2) + (c==='Alpha'?8:c==='Beta'?0:-5) + (Math.random()*6-3)),
+        cost: Math.round(20 + i + (c==='Alpha'?2:c==='Beta'?0:-1) + (Math.random()*4-2))
+      })));
+      state.rows = rows; state.headers = inferHeaders(rows); state.page=1;
+      populateSelectors(); els.xCol.value='date'; els.yCol.value='value'; els.catCol.value='category'; updateCategoryFilter();
+      renderTable(); computeKPIs(); summarizeColumns(); buildChart();
+      // hero chart
+      if(state.heroChart){ state.heroChart.destroy(); }
+      const hctx = els.heroChart.getContext('2d');
+      const byDate = {};
+      rows.forEach(r=>{ byDate[r.date] = (byDate[r.date]||0) + (isNumeric(r.value)? r.value:0) })
+      const labels = Object.keys(byDate), data = Object.values(byDate);
+      state.heroChart = new Chart(hctx, { type:'bar', data:{ labels, datasets:[{label:'Total value', data}]}, options:{ plugins:{legend:{display:false}}, scales:{ x:{ ticks:{ maxRotation:0 }}} }});
+    })
+
+    // ---------- Init hero chart (empty) ----------
+    window.addEventListener('DOMContentLoaded', ()=>{
+      const hctx = els.heroChart.getContext('2d');
+      state.heroChart = new Chart(hctx, { type:'bar', data:{ labels:['Load','your','data'], datasets:[{label:'Preview', data:[3,2,5]}]}, options:{ plugins:{legend:{display:false}} });
+    })
+  </script>
+</body>
+</html>
